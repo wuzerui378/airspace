@@ -5,6 +5,7 @@ import MainPage from './components/MainPage';
 import AirspaceCapacityForm from './components/AirspaceCapacityForm';
 import KeyParameterCalculation from './components/KeyParameterCalculation';
 import './App.css';
+import RegisterForm from './components/RegisterForm';
 
 const App: React.FC = () => {
   return (
@@ -16,6 +17,7 @@ const App: React.FC = () => {
           <Route path="/main" element={<MainPage />} />
           <Route path="/capacity" element={<AirspaceCapacityForm />} />
           <Route path="/parameter" element={<KeyParameterCalculation />} />
+          <Route path="/RegisterForm" element={<RegisterForm/>}/>
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>

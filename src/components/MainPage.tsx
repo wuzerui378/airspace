@@ -6,9 +6,9 @@ const MainPage: React.FC = () => {
 
   return (
     <div className="main-page">
-      <h2>请选择功能</h2>
+      <h4>请选择以下功能</h4>
       <button onClick={() => navigate('/capacity')}>空域容量计算</button>
-      <button onClick={() => navigate('/parameter')}>关键参数计算</button>
+      <button onClick={() => navigate('/parameter')}>无人机仿真验证</button>
     </div>
   );
 };
