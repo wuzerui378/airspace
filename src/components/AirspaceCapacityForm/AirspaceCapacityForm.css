@@ -1,0 +1,40 @@
+form {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+label {
+    flex: 0 0 250px;
+    text-align: right;
+    padding-right: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 5px;
+}
+
+.unit {
+    margin-left: 5px;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
