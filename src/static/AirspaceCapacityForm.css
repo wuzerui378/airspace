@@ -12,8 +12,8 @@ form {
 }
 
 label {
-    flex: 0 0 250px;
-    text-align: right;
+    flex: 0 0 150px;
+    text-align: center;
     padding-right: 10px;
 }
 

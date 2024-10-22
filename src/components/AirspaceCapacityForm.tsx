@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { useState, ChangeEvent,FormEvent } from 'react';
-import './AirspaceCapacityForm.css'; 
-import './AirspaceCapacityForm';
+import '../static/AirspaceCapacityForm.css'
 
 function AirspaceCapacityForm() {
     const [formData, setFormData] = useState({
