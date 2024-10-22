@@ -1,22 +1,31 @@
 import React, { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-interface LoginFormProps {
-  onLogin: (username: string, password: string) => void;
-}
-
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
+const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onLogin(username, password);
+    console.log(`Attempting to log in with ${username} and ${password}`);
+
+    if (username === 'admin' && password === '123456') {
+      console.log('Login successful');
+      setError('');
+      // 使用路由导航到Main主界面
+      navigate('/main');
+    } else {
+      console.log('Login failed');
+      setError('Invalid username or password');
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="login-form">
+    <form onSubmit={handleLogin} className="login-form">
       <div className="form-group">
-        <label htmlFor="username">用户名：</label>
+        <label htmlFor="username">用户名:</label>
         <input
           type="text"
           id="username"
@@ -26,7 +35,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="password">密码：</label>
+        <label htmlFor="password">密码:</label>
         <input
           type="password"
           id="password"
@@ -35,6 +44,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           required
         />
       </div>
+      {error && <div className="error-message">{error}</div>}
       <button type="submit">登录</button>
     </form>
   );
