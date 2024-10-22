@@ -1,26 +1,38 @@
+import { message } from 'antd';
 import React, { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(`Attempting to log in with ${username} and ${password}`);
+    try {
+        const response = await fetch('/airspace/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          message.success('登录成功')
+          navigate('/main');
+        } else {
+          message.error('登录失败，请检查用户名和密码');
+        }
+      } catch (error) {
+        message.error('登录失败')
+      }
+    };
 
-    if (username === 'admin' && password === '123456') {
-      console.log('Login successful');
-      setError('');
-      // 使用路由导航到Main主界面
-      navigate('/main');
-    } else {
-      console.log('Login failed');
-      setError('Invalid username or password');
-    }
-  };
+  const handleRegister = () => {
+    navigate('/RegisterForm')
+  }
 
   return (
     <form onSubmit={handleLogin} className="login-form">
@@ -44,8 +56,9 @@ const LoginForm: React.FC = () => {
           required
         />
       </div>
-      {error && <div className="error-message">{error}</div>}
       <button type="submit">登录</button>
+      <button type='button' onClick={handleRegister}>注册</button>
+      
     </form>
   );
 };

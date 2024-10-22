@@ -1,29 +1,55 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { message } from 'antd';
 const RegisterForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 在这里实现注册逻辑
-    console.log('Registering with:', { username, password, email });
-    // 这里可能会有API调用等操作
-    
-    // 假设注册成功，跳转到登录页面
-    navigate('/login');
+    setError('');
+
+    const userData = {
+      username,
+      password,
+      email,
+      phone
+    };
+
+    try {
+      const response = await fetch('/airspace/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (response.ok) {
+        message.success('注册成功！', 2, () => {
+          navigate('/login');
+        });
+      } else {
+        const errorData = await response.text();
+        message.error(errorData || '注册失败，请稍后再试');
+      }
+    } catch (error) {
+      console.error('Error during registration:', error);
+      setError('注册过程中发生错误，请稍后再试');
+    }
   };
 
   const handleBackToLogin = () => {
-    // 使用 navigate 跳转到登录页面
     navigate('/login');
   };
 
   return (
     <form onSubmit={handleSubmit} className="register-form">
+      {error && <div className="error-message">{error}</div>}
       <div className="form-group">
         <label htmlFor="username">用户名:</label>
         <input
@@ -51,6 +77,16 @@ const RegisterForm: React.FC = () => {
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="phone">电话号码:</label>
+        <input
+          type="tel"
+          id="phone"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           required
         />
       </div>
