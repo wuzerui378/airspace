@@ -1,6 +1,8 @@
 import { message } from 'antd';
 import React, { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
 
 const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -10,24 +12,22 @@ const LoginForm: React.FC = () => {
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-        const response = await fetch('/airspace/users/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username, password }),
-        });
-  
-        if (response.ok) {
-          const data = await response.json();
-          message.success('登录成功')
-          navigate('/main');
-        } else {
-          message.error('登录失败，请检查用户名和密码');
+      const response = await axios.post('http://localhost:8080/airspace/users/login', null, {
+        params: {
+          username,
+          password
         }
-      } catch (error) {
-        message.error('登录失败')
+      });
+
+      message.success('登录成功');
+      navigate('/main');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data || '登录失败，请检查用户名和密码');
+      } else {
+        message.error('登录失败');
       }
+    }
     };
 
   const handleRegister = () => {
