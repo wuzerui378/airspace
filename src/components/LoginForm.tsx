@@ -1,6 +1,8 @@
 import { message } from 'antd';
 import React, { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { User } from '../types/User';  // 确保导入User接口
 
 const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -10,28 +12,36 @@ const LoginForm: React.FC = () => {
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-        const response = await fetch('/airspace/users/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username, password }),
-        });
-  
-        if (response.ok) {
-          const data = await response.json();
-          message.success('登录成功')
-          navigate('/main');
-        } else {
-          message.error('登录失败，请检查用户名和密码');
+      const response = await axios.post<User>('http://localhost:8080/airspace/users/login', null, {
+        params: {
+          username,
+          password
         }
-      } catch (error) {
-        message.error('登录失败')
+      });
+
+      const user = response.data;
+      console.log(user.role);
+
+      message.success('登录成功');
+      // 根据角色导航到不同页面
+      if (user.role === 'ADMIN') {
+        console.log('222222222222')
+        navigate('/admin');
+      } else {
+        navigate('/main');
       }
-    };
+
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data || '登录失败，请检查用户名和密码');
+      } else {
+        message.error('登录失败');
+      }
+    }
+  };
 
   const handleRegister = () => {
-    navigate('/RegisterForm')
+    navigate('/register')
   }
 
   return (
@@ -58,7 +68,6 @@ const LoginForm: React.FC = () => {
       </div>
       <button type="submit">登录</button>
       <button type='button' onClick={handleRegister}>注册</button>
-      
     </form>
   );
 };

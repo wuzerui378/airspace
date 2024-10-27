@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
+import axios from 'axios';
 const RegisterForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -21,25 +22,22 @@ const RegisterForm: React.FC = () => {
     };
 
     try {
-      const response = await fetch('/airspace/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
+      const response = await axios.post(
+        'http://localhost:8080/airspace/users/register',
+        userData
+      );
+      message.success('注册成功！', 2, () => {
+        navigate('/login');
       });
-
-      if (response.ok) {
-        message.success('注册成功！', 2, () => {
-          navigate('/login');
-        });
-      } else {
-        const errorData = await response.text();
-        message.error(errorData || '注册失败，请稍后再试');
-      }
     } catch (error) {
-      console.error('Error during registration:', error);
-      setError('注册过程中发生错误，请稍后再试');
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data || '注册失败，请稍后再试';
+        message.error(errorMessage);
+        setError(errorMessage);
+      } else {
+        console.error('Error during registration:', error);
+        setError('注册过程中发生错误，请稍后再试');
+      }
     }
   };
 
