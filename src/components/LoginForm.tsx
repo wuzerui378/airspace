@@ -17,15 +17,17 @@ const LoginForm: React.FC = () => {
           },
           body: JSON.stringify({ username, password }),
         });
-  
+
         if (response.ok) {
-          const data = await response.json();
-          message.success('登录成功')
-          navigate('/main');
+            const data = await response.json();
+            message.success('登录成功');
+            navigate('/main');
         } else {
-          message.error('登录失败，请检查用户名和密码');
+            const errorData = await response.json(); // 获取错误信息
+            console.error('错误信息:', errorData);
+            message.error('登录失败，请检查用户名和密码');
         }
-      } catch (error) {
+    } catch (error) {
         message.error('登录失败')
       }
     };
