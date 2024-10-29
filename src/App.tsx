@@ -7,6 +7,7 @@ import KeyParameterCalculation from './components/KeyParameterCalculation';
 import RegisterForm from './components/RegisterForm';
 import UserManagement from './components/UserManagement';
 import './App.css';
+import HistoryCapacity from './components/HistoryCapacity';
 
 const App: React.FC = () => {
   return (
@@ -35,6 +36,10 @@ const App: React.FC = () => {
             <Route path="/admin" element={
                 <UserManagement />
             } />
+            <Route path="/history" element={
+                <HistoryCapacity />
+            } />
+
 
             
             {/* 默认重定向到登录页 */}
