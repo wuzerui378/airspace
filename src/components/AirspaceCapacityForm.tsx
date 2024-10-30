@@ -247,7 +247,7 @@ function AirspaceCapacityForm() {
       {calculatedCapacity !== null && maxFlights !== null && (
         <div className="result">
           <h3>计算的容量: {calculatedCapacity.toFixed(2)} 架次/小时</h3>
-          <h3>根据可用容量限制，最大架次: {maxFlights} 架次/小时</h3>
+          <h3>根据可用容量限制，最大架次: {Math.floor(maxFlights)} 架次/小时</h3>
         </div>
       )}
     </form>
