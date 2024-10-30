@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table, message, Space, Button } from 'antd';
+import { Table, message, Space, Button, Modal } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 
 interface AirspaceCapacity {
     id: number;
@@ -181,6 +181,30 @@ const HistoryCapacity: React.FC = () => {
             setLoading(false);
         }
     };
+    // 删除所有记录
+    const deleteAllRecords = async () => {
+        Modal.confirm({
+            title: '确认删除',
+            content: '确定要删除所有历史记录吗？此操作不可恢复！',
+            okText: '确认',
+            cancelText: '取消',
+            onOk: async () => {
+                try {
+                    const response = await axios.delete('http://localhost:8080/airspace/airspaceCapacity/deleteAll');
+                    if (response.data.status === 'success') {
+                        message.success('删除成功');
+                        // 刷新数据
+                        fetchHistoryData();
+                    } else {
+                        message.error(response.data.message || '删除失败');
+                    }
+                } catch (error) {
+                    console.error('删除失败:', error);
+                    message.error('删除失败');
+                }
+            }
+        });
+    };
 
     // 组件挂载时获取数据
     useEffect(() => {
@@ -198,6 +222,13 @@ const HistoryCapacity: React.FC = () => {
                 >
                     导出Excel
                 </Button>
+                <Button 
+                        danger
+                        icon={<DeleteOutlined />} 
+                        onClick={deleteAllRecords}
+                    >
+                        删除所有记录
+                    </Button>
             </div>
             <Table<AirspaceCapacity>
                 columns={columns}
