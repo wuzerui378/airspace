@@ -1,91 +1,61 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-import '../static/AirspaceCapacityForm.css';
+// AirspaceCapacityForm.tsx
+
+import React, { useState } from 'react';
+import {
+  Form,
+  InputNumber,
+  Button,
+  Row,
+  Col,
+  Typography,
+  Divider,
+  Space,
+  Tooltip,
+  message,
+  Card,
+} from 'antd';
+import {
+  PlusOutlined,
+  MinusCircleOutlined,
+  ArrowLeftOutlined,
+  HistoryOutlined,
+  InfoCircleOutlined,
+} from '@ant-design/icons';
 import { jStat } from 'jstat';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-
+const { Title } = Typography;
 
 interface FormData {
-  availableVolume: number; // V
-  safetyInterval: number; // Δ
-  safetyFactor: number; // f
-  restrictedAirspaceRatio: number; // Rb
-  efficiencyFactor: number; // E
-  aircraftVolume: number; // 单架飞机占用的空域体积
-}
-
-interface AirspaceCapacityDTO {
   availableVolume: number;
   safetyInterval: number;
   safetyFactor: number;
   restrictedAirspaceRatio: number;
   efficiencyFactor: number;
   aircraftVolume: number;
-  calculatedCapacity: number;
-  maxFlights: number;
-  createTime?: string;
+  speedCombinations: SpeedCombination[];
 }
 
+interface SpeedCombination {
+  v1: number;
+  v2: number;
+}
 
 function AirspaceCapacityForm() {
-  const [formData, setFormData] = useState<FormData>({
-    availableVolume: 1000, // 默认可用容量，单位：立方米
-    safetyInterval: 1.5, // 默认 delta_ij，单位：公里
-    safetyFactor: 1.0, // 默认安全系数
-    restrictedAirspaceRatio: 0.01, // 默认 Rb
-    efficiencyFactor: 1.0, // 默认效率系数
-    aircraftVolume: 50, // 默认单架飞机占用的空域体积，单位：立方米
-  });
-
+  const [form] = Form.useForm();
   const navigate = useNavigate();
-
   const [calculatedCapacity, setCalculatedCapacity] = useState<number | null>(null);
   const [maxFlights, setMaxFlights] = useState<number | null>(null);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: parseFloat(value)
-    }));
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const capacity = calculateCapacity(formData);
-      const maxFlightsByVolume = Math.floor(formData.availableVolume / formData.aircraftVolume);
-      const finalCapacity = Math.min(capacity, maxFlightsByVolume);
-
-      const airspaceCapacityDTO: AirspaceCapacityDTO = {
-        ...formData,
-        calculatedCapacity: capacity,
-        maxFlights: finalCapacity,
-      };
-
-      const response = await axios.post('http://localhost:8080/airspace/airspaceCapacity/calculate', airspaceCapacityDTO);
-      setCalculatedCapacity(capacity);
-      setMaxFlights(finalCapacity);
-      //alert(`计算的容量: ${capacity.toFixed(2)} 架次/小时\n根据可用容量限制，最大架次: ${finalCapacity} 架次/小时`);
-    } catch (error) {
-      console.error('计算时出错:', error);
-      alert('计算时出错');
-    }
-  };
-
-  const handleBack = () => {
-    window.history.back();
-  };
-
-  const handleHistory = () => {
-    navigate('/history')
-  }
-
-  // 计算容量的函数
-  const calculateCapacity = (data: FormData): number => {
-    // 定义飞机速度组合（单位：km/h）
-    const combinations = [
+  const initialValues: FormData = {
+    availableVolume: 1000,
+    aircraftVolume: 50,
+    safetyInterval: 1.5,
+    safetyFactor: 1.0,
+    restrictedAirspaceRatio: 0.01,
+    efficiencyFactor: 1.0,
+    speedCombinations: [
       { v1: 280, v2: 310 },
       { v1: 280, v2: 260 },
       { v1: 280, v2: 230 },
@@ -95,162 +65,284 @@ function AirspaceCapacityForm() {
       { v1: 210, v2: 310 },
       { v1: 210, v2: 260 },
       { v1: 210, v2: 230 },
-    ];
+    ],
+  };
 
-    // 映射表单输入到计算参数
-    const delta_ij = data.safetyInterval; // 最小允许间隔（公里）
-    const gamma = 20; // 空投场公共运行长度（公里），固定为20 km
-    const f = data.safetyFactor; // 安全系数
-    const Rb = data.restrictedAirspaceRatio; // 限制空域比率
-    const E = data.efficiencyFactor; // 效率系数
+  const onFinish = async (values: FormData) => {
+    try {
+      const capacity = calculateCapacity(values);
+      const maxFlightsByVolume = Math.floor(values.availableVolume / values.aircraftVolume);
+      const finalCapacity = Math.min(capacity, maxFlightsByVolume);
 
-    // 基础参数设置
-    const base_sigma_o = 10; // 占用时间的标准差（秒）
-    const sigma_o = base_sigma_o / f; // 根据安全系数调整
+      const airspaceCapacityDTO = {
+        ...values,
+        calculatedCapacity: capacity,
+        maxFlights: finalCapacity,
+      };
 
-    const pv = Rb; // 违反最小间隔的概率
-    const qv = 1 - pv; // 安全间隔概率
+      // 发送计算结果到后端（根据您的实际情况调整 URL）
+      await axios.post(
+          'http://localhost:8080/airspace/airspaceCapacity/calculate',
+          airspaceCapacityDTO
+      );
 
-    const Tm = 1; // 时间段，单位为小时
+      setCalculatedCapacity(capacity);
+      setMaxFlights(finalCapacity);
+    } catch (error) {
+      console.error('计算时出错:', error);
+      message.error('计算时出错');
+    }
+  };
 
-    // 将 sigma_o 转换为小时单位
-    const sigma_o_in_hours = sigma_o / 3600; // 将秒转换为小时
+  // 计算容量的函数
+  const calculateCapacity = (data: FormData): number => {
+    const delta_ij = data.safetyInterval;
+    const gamma = 20;
+    const f = data.safetyFactor;
+    const Rb = data.restrictedAirspaceRatio;
+    const E = data.efficiencyFactor;
 
-    // 计算 Phi_inv_qv
+    const base_sigma_o = 10;
+    const sigma_o = base_sigma_o / f;
+
+    const pv = Rb;
+    const qv = 1 - pv;
+
+    const Tm = 1;
+    const sigma_o_in_hours = sigma_o / 3600;
+
     const Phi_inv_qv = jStat.normal.inv(qv, 0, 1);
 
-    // 为每个组合分配相等的概率
-    const num_combinations = combinations.length;
+    const num_combinations = data.speedCombinations.length;
+    if (num_combinations === 0) {
+      return 0;
+    }
     const P_ij = 1 / num_combinations;
 
-    // 计算每个组合的 T_ij 值
     const T_ij_list: number[] = [];
 
-    combinations.forEach(combo => {
-      const v_i = combo.v1; // 前机速度（km/h）
-      const v_j = combo.v2; // 后机速度（km/h）
+    data.speedCombinations.forEach((combo) => {
+      const v_i = combo.v1;
+      const v_j = combo.v2;
 
       let IT_ij: number;
       if (v_i <= v_j) {
-        // 渐进态（前机速度小于等于后机）
         IT_ij = delta_ij / v_j + sigma_o_in_hours * Phi_inv_qv;
       } else {
-        // 渐远态（前机速度大于后机）
-        IT_ij = (delta_ij / v_j +
-          (gamma - delta_ij) * (1 / v_j - 1 / v_i) +
-          sigma_o_in_hours * Phi_inv_qv);
+        IT_ij =
+            delta_ij / v_j +
+            (gamma - delta_ij) * (1 / v_j - 1 / v_i) +
+            sigma_o_in_hours * Phi_inv_qv;
       }
       T_ij_list.push(IT_ij);
     });
 
-    // 计算容量 C
     const denominator = T_ij_list.reduce((acc, T_ij) => acc + P_ij * T_ij, 0);
+    if (denominator === 0) {
+      return 0;
+    }
     let C = Tm / denominator;
-
-    // 应用效率系数
     C = C * E;
 
     return C;
   };
 
-
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="form-group">
-        <label htmlFor="availableVolume">可用容量 (V):</label>
-        <input
-          type="number"
-          id="availableVolume"
-          name="availableVolume"
-          value={formData.availableVolume}
-          onChange={handleChange}
-          required
-          min="1"
-          step="1"
-        />
-        <span className="unit">立方米</span>
+      <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto' }}>
+        <Title level={2} style={{ textAlign: 'center' }}>
+          空域容量计算表单
+        </Title>
+        <Form
+            form={form}
+            layout="horizontal"
+            onFinish={onFinish}
+            initialValues={initialValues}
+            labelCol={{ span: 8 }}
+            wrapperCol={{ span: 16 }}
+        >
+          <Card title="基本参数" bordered={false} style={{ marginBottom: '20px' }}>
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                    name="availableVolume"
+                    label={
+                      <span>
+                    可用容量 (V)
+                    <Tooltip title="单位：立方米">
+                      <InfoCircleOutlined style={{ marginLeft: 4 }} />
+                    </Tooltip>
+                  </span>
+                    }
+                    rules={[{ required: true, message: '请输入可用容量' }]}
+                >
+                  <InputNumber min={1} step={1} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                    name="aircraftVolume"
+                    label={
+                      <span>
+                    单架飞机占用的空域体积
+                    <Tooltip title="单位：立方米">
+                      <InfoCircleOutlined style={{ marginLeft: 4 }} />
+                    </Tooltip>
+                  </span>
+                    }
+                    rules={[{ required: true, message: '请输入单架飞机占用的空域体积' }]}
+                >
+                  <InputNumber min={1} step={1} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                    name="safetyInterval"
+                    label={
+                      <span>
+                    安全间隔 (Δ)
+                    <Tooltip title="单位：公里">
+                      <InfoCircleOutlined style={{ marginLeft: 4 }} />
+                    </Tooltip>
+                  </span>
+                    }
+                    rules={[{ required: true, message: '请输入安全间隔' }]}
+                >
+                  <InputNumber min={0.1} step={0.1} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                    name="safetyFactor"
+                    label="安全系数 (f)"
+                    rules={[{ required: true, message: '请输入安全系数' }]}
+                >
+                  <InputNumber min={0.1} step={0.1} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                    name="restrictedAirspaceRatio"
+                    label="限制空域比率 (Rb)"
+                    rules={[{ required: true, message: '请输入限制空域比率' }]}
+                >
+                  <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                    name="efficiencyFactor"
+                    label="效率系数 (E)"
+                    rules={[{ required: true, message: '请输入效率系数' }]}
+                >
+                  <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          <Card title="速度组合 (v₁, v₂)" bordered={false}>
+            <Form.List name="speedCombinations">
+              {(fields, { add, remove }) => (
+                  <>
+                    {fields.map(({ key, name, ...restField }) => (
+                        <Row gutter={16} key={key} align="middle">
+                          <Col span={10}>
+                            <Form.Item
+                                {...restField}
+                                name={[name, 'v1']}
+                                label="v₁ (km/h)"
+                                rules={[{ required: true, message: '请输入 v₁' }]}
+                                labelCol={{ span: 8 }}
+                                wrapperCol={{ span: 16 }}
+                            >
+                              <InputNumber min={0} step={1} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </Col>
+
+                          <Col span={10}>
+                            <Form.Item
+                                {...restField}
+                                name={[name, 'v2']}
+                                label="v₂ (km/h)"
+                                rules={[{ required: true, message: '请输入 v₂' }]}
+                                labelCol={{ span: 8 }}
+                                wrapperCol={{ span: 16 }}
+                            >
+                              <InputNumber min={0} step={1} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </Col>
+
+                          <Col span={4}>
+                            <Button
+                                type="text"
+                                icon={<MinusCircleOutlined />}
+                                onClick={() => remove(name)}
+                                danger
+                            >
+                              移除
+                            </Button>
+                          </Col>
+                        </Row>
+                    ))}
+                    <Form.Item wrapperCol={{ span: 24 }}>
+                      <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}
+                          style={{ width: '60%', margin: '0 auto' }}
+                      >
+                        添加速度组合
+                      </Button>
+                    </Form.Item>
+                  </>
+              )}
+            </Form.List>
+          </Card>
+
+          <Form.Item wrapperCol={{ span: 24 }} style={{ textAlign: 'center', marginTop: '20px' }}>
+            <Space size="large">
+              <Button type="primary" htmlType="submit" size="large">
+                计算容量
+              </Button>
+              <Button
+                  onClick={() => window.history.back()}
+                  icon={<ArrowLeftOutlined />}
+                  size="large"
+              >
+                返回
+              </Button>
+              <Button
+                  onClick={() => navigate('/history')}
+                  icon={<HistoryOutlined />}
+                  size="large"
+              >
+                历史记录
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+
+        {calculatedCapacity !== null && maxFlights !== null && (
+            <Card
+                title="计算结果"
+                bordered={false}
+                style={{ marginTop: '20px', textAlign: 'center' }}
+            >
+              <Typography>
+                <Title level={4}>计算的容量: {calculatedCapacity.toFixed(2)} 架次/小时</Title>
+                <Title level={4}>
+                  根据可用容量限制，最大架次: {Math.floor(maxFlights)} 架次/小时
+                </Title>
+              </Typography>
+            </Card>
+        )}
       </div>
-      <div className="form-group">
-        <label htmlFor="aircraftVolume">单架飞机占用的空域体积:</label>
-        <input
-          type="number"
-          id="aircraftVolume"
-          name="aircraftVolume"
-          value={formData.aircraftVolume}
-          onChange={handleChange}
-          required
-          min="1"
-          step="1"
-        />
-        <span className="unit">立方米</span>
-      </div>
-      <div className="form-group">
-        <label htmlFor="safetyInterval">安全间隔 (Δ):</label>
-        <input
-          type="number"
-          id="safetyInterval"
-          name="safetyInterval"
-          value={formData.safetyInterval}
-          onChange={handleChange}
-          required
-          min="0.1"
-          step="0.1"
-        />
-        <span className="unit">公里</span>
-      </div>
-      <div className="form-group">
-        <label htmlFor="safetyFactor">安全系数 (f):</label>
-        <input
-          type="number"
-          id="safetyFactor"
-          name="safetyFactor"
-          value={formData.safetyFactor}
-          onChange={handleChange}
-          required
-          min="0.1"
-          step="0.1"
-        />
-      </div>
-      <div className="form-group">
-        <label htmlFor="restrictedAirspaceRatio">限制空域比率 (Rb):</label>
-        <input
-          type="number"
-          id="restrictedAirspaceRatio"
-          name="restrictedAirspaceRatio"
-          value={formData.restrictedAirspaceRatio}
-          onChange={handleChange}
-          required
-          min="0"
-          max="1"
-          step="0.01"
-        />
-      </div>
-      <div className="form-group">
-        <label htmlFor="efficiencyFactor">效率系数 (E):</label>
-        <input
-          type="number"
-          id="efficiencyFactor"
-          name="efficiencyFactor"
-          value={formData.efficiencyFactor}
-          onChange={handleChange}
-          required
-          min="0"
-          max="1"
-          step="0.01"
-        />
-      </div>
-      <div className="form-actions">
-        <button type="submit">计算容量</button>
-        <button type="button" className="back-button" onClick={handleBack}>返回</button>
-        <button type='button' onClick={handleHistory}>历史记录</button>
-      </div>
-      {calculatedCapacity !== null && maxFlights !== null && (
-        <div className="result">
-          <h3>计算的容量: {calculatedCapacity.toFixed(2)} 架次/小时</h3>
-          <h3>根据可用容量限制，最大架次: {Math.floor(maxFlights)} 架次/小时</h3>
-        </div>
-      )}
-    </form>
   );
 }
 
