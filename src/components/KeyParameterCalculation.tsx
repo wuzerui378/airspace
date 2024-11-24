@@ -4,6 +4,8 @@ import React, { useState, ChangeEvent, FormEvent } from 'react';
 import '../static/KeyParameterCalculation.css';
 import Plot from 'react-plotly.js';
 import { FormData, SimulationResult, runMonteCarloSimulation } from '../utils/monteCarloSimulation';
+import AirspaceViewer from './AirspaceViewer';  // 导入 AirspaceViewer 组件
+
 
 const KeyParameterCalculation: React.FC = () => {
     const [formData, setFormData] = useState<FormData>({
@@ -20,6 +22,8 @@ const KeyParameterCalculation: React.FC = () => {
     const [simulationResults, setSimulationResults] = useState<SimulationResult[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [progress, setProgress] = useState<number>(0); // 仿真进度
+    const [showViewer, setShowViewer] = useState<boolean>(false);
+
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -27,6 +31,17 @@ const KeyParameterCalculation: React.FC = () => {
             ...prevData,
             [name]: parseFloat(value),
         }));
+    };
+
+    // 添加空域尺寸计算
+    const calculateAirspaceDimensions = () => {
+        // 假设空域是一个立方体，从可用容量计算边长
+        const side = Math.cbrt(formData.availableVolume);
+        return {
+            length: side,
+            width: side,
+            height: side
+        };
     };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -100,7 +115,33 @@ const KeyParameterCalculation: React.FC = () => {
 
     return (
         <div className="calculation-container">
+            {showViewer && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>空域三维可视化</h2>
+                            <button
+                                className="close-button"
+                                onClick={() => setShowViewer(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <AirspaceViewer 
+                                airspace={calculateAirspaceDimensions()} 
+                                numberOfAircraft={maxFlights ? Math.floor(maxFlights) : 0} // 使用计算出的最大架次
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
             <form onSubmit={handleSubmit} className="calculation-form">
+                <div className="form-header">
+                    <h2>关键参数计算</h2>
+                </div>
                 <div className="form-group">
                     <label htmlFor="availableVolume">可用容量 (V):</label>
                     <input
@@ -187,6 +228,13 @@ const KeyParameterCalculation: React.FC = () => {
                 <div className="form-actions">
                     <button type="submit" disabled={loading}>
                         {loading ? '计算中...' : '计算容量'}
+                    </button>
+                    <button
+                        type="button"
+                        className="view-3d-button"
+                        onClick={() => setShowViewer(true)}
+                    >
+                        查看三维模型
                     </button>
                     <button type="button" className="back-button" onClick={handleBack}>
                         返回
