@@ -44,7 +44,7 @@ const KeyParameterCalculation: React.FC = () => {
                     const updatedResults = [...prevResults, result];
 
                     // 更新进度
-                    setProgress(prev => prev + (1 / iterations) * 100);
+                    setProgress((updatedResults.length / iterations) * 100);
 
                     // 计算当前的平均容量
                     const totalCapacity = updatedResults.reduce((acc, res) => acc + res.capacity, 0);
